@@ -2,89 +2,41 @@ package main
 
 import (
 	"bufio"
-	"encoding/base64"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
 	"strings"
 )
 
+//markdown的图片检测
+//todo 检测markdown的图片引用，包括提取图片名，有待改进检测的正则表达式以及提取图片名策略
+const md_image = `!\[(.*)\]\((.*)\)`
+
+var mdImagePattern = regexp.MustCompile(md_image)
+
 //markdown图片要在此文件夹内
 //图片是同级关系？ 子级关系？
 //返回一个集合 里面是可能的图片->path
 var imageMap map[string]string
 
-//填充imageMap key=image小名称 value=image的路径+文件名
-//abc.jpg -> ../c/a/abc.jpg
-func cacheImagePath(pathname string) error {
-	pathname = strings.TrimSuffix(pathname, `/`)
-	ds, err := os.ReadDir(pathname)
-	if err != nil {
-		log.Printf("os_read_dir path=%v, err=%v\n", pathname, err)
-		return err
-	}
-	for _, v := range ds {
-		if v.IsDir() {
-			name := v.Name()
-			err = cacheImagePath(pathname + "/" + name)
-			if err != nil {
-				return err
-			}
-		} else {
-			log.Printf("path=%v,v= %v\n", pathname, v.Name())
-			//abc.png
-			if strings.Contains(v.Name(), ".") && !strings.HasSuffix(v.Name(), ".md") {
-
-				imageMap[v.Name()] = strings.TrimSuffix(pathname, `/`) + "/" + v.Name()
-			}
-		}
-	}
-	return nil
-}
-
-//图片路径转base64
-func readImageToBase64(imageFullPath string) (string, error) {
-	//jpg png jpeg
-	sls := strings.Split(imageFullPath, `.`)
-	class := sls[len(sls)-1]
-	log.Printf("图片类型是%v\n", class)
-
-	ff, err := os.Open(imageFullPath)
-	if err != nil {
-		log.Printf("打开图片%v失败%v\n", imageFullPath, err)
-		return "", err
-	}
-	defer ff.Close()
-
-	data, err := ioutil.ReadAll(ff)
-	if err != nil {
-		log.Printf("io读取失败%v\n", err)
-		return "", err
-	}
-
-	base64Data := base64.StdEncoding.EncodeToString(data)
-
-	//data:image/png;base64,
-	//base64图片的前缀
-
-	prefix0 := `data:image/?;base64,`
-	prefix1 := strings.ReplaceAll(prefix0, `?`, class)
-
-	base64Data = prefix1 + base64Data
-	return base64Data, nil
-}
-
 //只要path填对
 func main() {
+	path := `../testmd`
+	where := false
+	processMDRootPath(path, where)
+}
+
+//输入markdown的根目录文件夹相对go运行程序的相对路径
+//比如 ../channel/ 或者 ../a/b/mdFiles
+//会在里面递归查找类似abc.md的文件，然后处理后生成abc_base64.md的新文件
+//输入参数where:
+//当where=true 新md文件放在原来md的相同位置那里
+//当where=false 新md文件放在此go程序的运行位置
+func processMDRootPath(markDownRootPath string, where bool) {
 	imageMap = make(map[string]string)
 
-	path := `../channel/`
-	//path = `../testmd/`
-	path = `../录像丢失bug复盘`
-
-	path = strings.TrimSuffix(path, "/") + "/"
+	path := strings.TrimSuffix(markDownRootPath, "/") + "/"
 
 	//预处理图片 存imageMap
 	err := cacheImagePath(path)
@@ -122,13 +74,13 @@ func main() {
 
 		//只剩待转换的md文件!
 		log.Printf("======path:[%v]====file:[%v] \n", path, dirName)
-		processMDFile(path, dirName, true)
+		generateNewMDFile(path, dirName, where)
 	}
 }
 
 //把md的图片改成base64的
 //where=true就是放在md那里, where=false就是放在go程序运行的地方
-func processMDFile(path, name string, where bool) error {
+func generateNewMDFile(path, name string, where bool) error {
 	finalName := path + name
 	finalName2 := strings.TrimSuffix(finalName, `.md`) + "_base64.md"
 
@@ -253,8 +205,3 @@ func processMDFile(path, name string, where bool) error {
 	}
 	return nil
 }
-
-//markdown的图片检测
-const md_image = `!\[(.*)\]\((.*)\)`
-
-var mdImagePattern = regexp.MustCompile(md_image)
