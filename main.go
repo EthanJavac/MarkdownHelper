@@ -2,6 +2,7 @@ package main
 
 import (
 	"MarkdownHelper/img_process"
+	"MarkdownHelper/params"
 	"bufio"
 	"io"
 	"log"
@@ -18,8 +19,12 @@ var mdImagePattern = regexp.MustCompile(md_image)
 
 //只要path填对
 func main() {
-	path := `../testmd`
-	where := false
+	path := *params.Path
+	where := *params.Original
+	if path == "" {
+		log.Printf("未输入有效路径\n")
+		return
+	}
 	processMDRootPath(path, where)
 }
 
