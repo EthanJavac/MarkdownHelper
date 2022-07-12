@@ -30,12 +30,12 @@ func main() {
 //当where=true 新md文件放在原来md的相同位置那里
 //当where=false 新md文件放在此go程序的运行位置
 func processMDRootPath(markDownRootPath string, where bool) {
-	img_process.ImageMap = make(map[string]string)
+	img_process.ImageMap = make(map[string]struct{})
 
 	path := strings.TrimSuffix(markDownRootPath, "/") + "/"
 
 	//预处理图片 存imageMap
-	err := img_process.CacheImagePath(path)
+	err := img_process.CacheImagePathAndProcess(path)
 	if err != nil {
 		log.Printf("预处理图片出错%v\n", err)
 		return
@@ -68,8 +68,8 @@ func processMDRootPath(markDownRootPath string, where bool) {
 			continue
 		}
 
-		//只剩待转换的md文件!
-		log.Printf("======path:[%v]====file:[%v] \n", path, dirName)
+		////只剩待转换的md文件!
+		//log.Printf("======path:[%v]====file:[%v] \n", path, dirName)
 		generateNewMDFile(path, dirName, where)
 	}
 }
@@ -159,17 +159,24 @@ func generateNewMDFile(path, name string, where bool) error {
 
 			//()()()
 
+			//inners是括号内的原型图片引用
+			//可能是 ./222.jpg 可能是222.jpg
+			//可能是 ./dir00/test_c.jpg 可能是dir01/dir02/333.bmp
+			var inners2 = make([]string, 0, len(inners))
+			for _, v := range inners {
+				inners2 = append(inners2, strings.TrimPrefix(v, `./`))
+			}
+			inners = inners2
+
 			bs := builder.String()
 
 			for _, inner := range inners {
-				for k1, v1 := range img_process.ImageMap {
-					//v1可能是 ../abc/edf/tom.png
-					//k1 必定是 tom.png
-					//inner 可能是 tom.png 可能是./tom.png
-					if strings.Contains(inner, k1) {
-						b64Str, err := img_process.ReadImageToBase64(v1)
+				for k1 := range img_process.ImageMap {
+
+					if k1 == inner {
+						b64Str, err := img_process.ReadImageToBase64(k1)
 						if err != nil {
-							log.Printf("k1=%v,v=1%v,图片处理出错%v\n", k1, v1, err)
+							log.Printf("图片相对路径filePath=%v,转base64出错%v\n", k1, err)
 						}
 						bs = strings.Replace(bs, `()`, `(`+b64Str+`)`, 1)
 					}
@@ -178,19 +185,6 @@ func generateNewMDFile(path, name string, where bool) error {
 
 			f2.WriteString(bs)
 			f2.WriteString("\n")
-
-			//for image, imagePath := range imageMap {
-			//	if strings.Contains(str, image) {
-			//		imageFinalPath := strings.TrimSuffix(imagePath, `/`) + `/`
-			//		imageFullName := imageFinalPath + image
-			//		//把imageFullName替换成base64
-			//		b64Str, err := readImageToBase64(imageFullName)
-			//		if err != nil {
-			//			log.Printf("图片处理出错%v\n", err)
-			//		}
-			//		localMap[image] = b64Str
-			//	}
-			//}
 
 			log.Printf("=================================\n")
 		} else {
