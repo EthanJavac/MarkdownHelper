@@ -1,4 +1,4 @@
-package main
+package img_process
 
 import (
 	"encoding/base64"
@@ -8,10 +8,15 @@ import (
 	"strings"
 )
 
+//markdown图片要在此文件夹内
+//图片是同级关系？ 子级关系？
+//返回一个集合 里面是可能的图片->path
+var ImageMap map[string]string
+
 //填充imageMap key=image小名称 value=image的路径+文件名
 //abc.jpg -> ../c/a/abc.jpg
 //递归读取markdown根文件夹下所有文件(排除dir和markdown类型),key记录shortName,value记录相对路径+shortName
-func cacheImagePath(pathname string) error {
+func CacheImagePath(pathname string) error {
 	pathname = strings.TrimSuffix(pathname, `/`)
 	ds, err := os.ReadDir(pathname)
 	if err != nil {
@@ -21,7 +26,7 @@ func cacheImagePath(pathname string) error {
 	for _, v := range ds {
 		if v.IsDir() {
 			name := v.Name()
-			err = cacheImagePath(pathname + "/" + name)
+			err = CacheImagePath(pathname + "/" + name)
 			if err != nil {
 				return err
 			}
@@ -30,7 +35,7 @@ func cacheImagePath(pathname string) error {
 			//abc.png
 			if strings.Contains(v.Name(), ".") && !strings.HasSuffix(v.Name(), ".md") {
 
-				imageMap[v.Name()] = strings.TrimSuffix(pathname, `/`) + "/" + v.Name()
+				ImageMap[v.Name()] = strings.TrimSuffix(pathname, `/`) + "/" + v.Name()
 			}
 		}
 	}
@@ -40,7 +45,7 @@ func cacheImagePath(pathname string) error {
 //图片路径转base64
 //输入就是 ../abc/def/a.jpg  abc/edf/g.jpg  ./a/b/c.png
 //输出就是 data:image/?;base64,wer32r432... base64编码的图片
-func readImageToBase64(imageFullPath string) (string, error) {
+func ReadImageToBase64(imageFullPath string) (string, error) {
 	//jpg png jpeg
 	sls := strings.Split(imageFullPath, `.`)
 	class := sls[len(sls)-1]

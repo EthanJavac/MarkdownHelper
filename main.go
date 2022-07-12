@@ -1,6 +1,7 @@
 package main
 
 import (
+	"MarkdownHelper/img_process"
 	"bufio"
 	"io"
 	"log"
@@ -15,15 +16,10 @@ const md_image = `!\[(.*)\]\((.*)\)`
 
 var mdImagePattern = regexp.MustCompile(md_image)
 
-//markdown图片要在此文件夹内
-//图片是同级关系？ 子级关系？
-//返回一个集合 里面是可能的图片->path
-var imageMap map[string]string
-
 //只要path填对
 func main() {
 	path := `../testmd`
-	where := false
+	where := true
 	processMDRootPath(path, where)
 }
 
@@ -34,18 +30,18 @@ func main() {
 //当where=true 新md文件放在原来md的相同位置那里
 //当where=false 新md文件放在此go程序的运行位置
 func processMDRootPath(markDownRootPath string, where bool) {
-	imageMap = make(map[string]string)
+	img_process.ImageMap = make(map[string]string)
 
 	path := strings.TrimSuffix(markDownRootPath, "/") + "/"
 
 	//预处理图片 存imageMap
-	err := cacheImagePath(path)
+	err := img_process.CacheImagePath(path)
 	if err != nil {
 		log.Printf("预处理图片出错%v\n", err)
 		return
 	}
 
-	if len(imageMap) == 0 {
+	if len(img_process.ImageMap) == 0 {
 		log.Printf("文件夹内没有非markdown类型的文件了\n")
 		return
 	}
@@ -166,12 +162,12 @@ func generateNewMDFile(path, name string, where bool) error {
 			bs := builder.String()
 
 			for _, inner := range inners {
-				for k1, v1 := range imageMap {
+				for k1, v1 := range img_process.ImageMap {
 					//v1可能是 ../abc/edf/tom.png
 					//k1 必定是 tom.png
 					//inner 可能是 tom.png 可能是./tom.png
 					if strings.Contains(inner, k1) {
-						b64Str, err := readImageToBase64(v1)
+						b64Str, err := img_process.ReadImageToBase64(v1)
 						if err != nil {
 							log.Printf("k1=%v,v=1%v,图片处理出错%v\n", k1, v1, err)
 						}
