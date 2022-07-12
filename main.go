@@ -19,7 +19,7 @@ var mdImagePattern = regexp.MustCompile(md_image)
 //只要path填对
 func main() {
 	path := `../testmd`
-	where := true
+	where := false
 	processMDRootPath(path, where)
 }
 
@@ -76,8 +76,8 @@ func processMDRootPath(markDownRootPath string, where bool) {
 
 //把md的图片改成base64的
 //where=true就是放在md那里, where=false就是放在go程序运行的地方
-func generateNewMDFile(path, name string, where bool) error {
-	finalName := path + name
+func generateNewMDFile(originPath, name string, where bool) error {
+	finalName := originPath + name
 	finalName2 := strings.TrimSuffix(finalName, `.md`) + "_base64.md"
 
 	if !where {
@@ -154,11 +154,6 @@ func generateNewMDFile(path, name string, where bool) error {
 				}
 			}
 
-			//处理之后 	abcd![12](333.jpg)dfweefrw![](./dfsf.jpeg)
-			//就会变成  abcd![12]()dfweefrw![]() inners切片里面放了`333.jpg` `./dfsf.jpeg`
-
-			//()()()
-
 			//inners是括号内的原型图片引用
 			//可能是 ./222.jpg 可能是222.jpg
 			//可能是 ./dir00/test_c.jpg 可能是dir01/dir02/333.bmp
@@ -174,7 +169,8 @@ func generateNewMDFile(path, name string, where bool) error {
 				for k1 := range img_process.ImageMap {
 
 					if k1 == inner {
-						b64Str, err := img_process.ReadImageToBase64(k1)
+						//需要还原 go程序和md文件夹的相对路径
+						b64Str, err := img_process.ReadImageToBase64(originPath + "/" + k1)
 						if err != nil {
 							log.Printf("图片相对路径filePath=%v,转base64出错%v\n", k1, err)
 						}
