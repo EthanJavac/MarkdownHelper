@@ -4,6 +4,7 @@ import (
 	"MarkdownHelper/img_process"
 	"MarkdownHelper/params"
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -22,7 +23,10 @@ func main() {
 	path := *params.Path
 	where := *params.Original
 	if path == "" {
-		log.Printf("未输入有效路径\n")
+		fmt.Printf("未输入有效路径\n")
+		fmt.Printf("operation manual:\n")
+		fmt.Printf(`.\main.exe -path "../testmd" -place false` + "\n")
+		fmt.Printf(`./main -path "../testmd" -place false` + "\n")
 		return
 	}
 	processMDRootPath(path, where)

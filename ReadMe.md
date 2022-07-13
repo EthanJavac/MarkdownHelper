@@ -1,4 +1,21 @@
-### ReadMe
+# ReadMe
+
+###使用方法
+
+windows系统  
+
+`.\main.exe -path "../testmd" -palce false`    
+
+linux系统  
+
+`./main -path "../testmd" -palce false`  
+
+>main程序后面的 
+-path表示待处理的markdown文件夹和go程序的相对路径， 
+-place true表示新文件生成在源markdown文件夹内，
+-place false表示新文件生成在go程序运行所在路径内
+
+### 介绍
 
 解决了`本地markdown文件依赖文件夹内部图片，生成预览版html只能在本地文件夹内浏览而不能拿到其他地方正确展示图片`的问题  
 

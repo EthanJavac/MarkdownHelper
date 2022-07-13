@@ -1,6 +1,8 @@
 package params
 
-import "flag"
+import (
+	"flag"
+)
 
 var (
 	Path     = flag.String("path", "", "relative path to the markdown folder")
@@ -8,5 +10,6 @@ var (
 )
 
 func init() {
+
 	flag.Parse()
 }
